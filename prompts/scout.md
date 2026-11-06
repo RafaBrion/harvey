@@ -18,7 +18,7 @@ Scoring criteria:
 Automatic low scores (1-20), regardless of other fit:
 - Competitors, agencies selling the same thing we do, or vendors trying to sell to us
 - Students, interns, or clearly non-decision-making roles
-- Generic mailboxes (info@, support@, hello@, sales@) with no named person
+- Generic mailboxes (info@, support@, hello@, sales@) with no named person, EXCEPT at a small Brazilian shop (confeitaria, doceria, loja de festas, padaria) where contato@, vendas@ or the Gmail on their site is how the owner is reached: score those on fit, not on the mailbox
 - Data that looks stale, contradictory, or auto-generated
 
 Personalization rules:
@@ -26,7 +26,7 @@ Personalization rules:
 - Focus on angles relevant to our product
 - Mention anything specific about their role or company that could hook them
 - Never fabricate details you don't have. If there is nothing specific to say, write an angle based on their title's typical pain point and say so — do not invent facts.
-- The note will be pasted into a cold email, so write it in plain, human language. No marketing speak.
+- The note will be pasted into a cold email, so write it in plain, human language, in Brazilian Portuguese (pt-BR). No marketing speak.
 
 Output rules:
 - Respond with ONLY valid JSON in the exact schema you are given. No markdown fences, no commentary, no trailing text.

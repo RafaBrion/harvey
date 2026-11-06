@@ -429,9 +429,12 @@ OPT_OUT_WORDS = ("no thanks", "no thank you", "unsubscribe", "stop", "remove me"
 HEBREW_OPT_OUT_WORDS = ("הסר", "הסירו", "הסרה", "לא תודה", "הסירו אותי", "תורידו אותי")
 # The same in Spanish ('Responda "no, gracias"', 'Responda BAJA').
 SPANISH_OPT_OUT_WORDS = ("no gracias", "baja", "darme de baja")
+# The same in Portuguese ('Responda "remover"', 'Responda "não, obrigado"').
+PORTUGUESE_OPT_OUT_WORDS = ("não obrigado", "não obrigada", "remover", "descadastrar")
 _OPT_OUT_WORD_RE = "(?:" + "|".join(
     r"[\s,]+".join(map(re.escape, w.split()))
-    for w in OPT_OUT_WORDS + HEBREW_OPT_OUT_WORDS + SPANISH_OPT_OUT_WORDS) + ")"
+    for w in OPT_OUT_WORDS + HEBREW_OPT_OUT_WORDS + SPANISH_OPT_OUT_WORDS
+    + PORTUGUESE_OPT_OUT_WORDS) + ")"
 _ASKS_FOR_OPT_OUT_RE = re.compile(
     r"\b(?:reply(?:\s+with)?|(?:responda|responde|respondan|conteste|contesta|escriba)(?:\s+con)?)"
     r"\s*[\"'\u201c\u2018]?\s*" + _OPT_OUT_WORD_RE + r"\b", re.IGNORECASE)
@@ -515,7 +518,7 @@ class ComplianceConfig(BaseModel):
                 "opt_out_line must ask for a reply Harvey recognises as an opt-out, "
                 'e.g. Reply "no thanks" / Reply STOP, in Hebrew השיבו "הסר", or in Spanish Responda BAJA. Recognised: '
                 + ", ".join(f'"{w}"' for w in OPT_OUT_WORDS + HEBREW_OPT_OUT_WORDS
-                            + SPANISH_OPT_OUT_WORDS) + "."
+                            + SPANISH_OPT_OUT_WORDS + PORTUGUESE_OPT_OUT_WORDS) + "."
             )
         return v
 

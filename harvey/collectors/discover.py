@@ -1111,6 +1111,27 @@ class OpenStreetMap(DiscoveryProvider):
         "panader": ['shop=bakery'],
         "clinica": ['amenity=clinic'],
         "clínica": ['amenity=clinic'],
+        # Portuguese (Brazil) terms
+        "confeitar": ['shop=pastry', 'shop=confectionery', 'shop=bakery'],
+        "docer": ['shop=confectionery', 'shop=pastry'],
+        "doces": ['shop=confectionery', 'shop=pastry'],
+        "brigadeir": ['shop=confectionery', 'shop=pastry'],
+        "bombonier": ['shop=confectionery'],
+        "chocolat": ['shop=chocolate', 'shop=confectionery'],
+        "padaria": ['shop=bakery', 'shop=pastry'],
+        "cafeteria": ['amenity=cafe'],
+        "sorvet": ['amenity=ice_cream'],
+        "artigos para festa": ['shop=party'],
+        "festa": ['shop=party'],
+        "embalag": ['shop=wholesale', 'shop=party'],
+        "atacad": ['shop=wholesale'],
+        "buffet": ['craft=caterer', 'amenity=events_venue'],
+        "cesta": ['shop=gift'],
+        "presente": ['shop=gift'],
+        "empório": ['shop=deli', 'shop=health_food'],
+        "emporio": ['shop=deli', 'shop=health_food'],
+        "papelaria": ['shop=stationery'],
+        "artesanato": ['shop=craft'],
     }
 
     def _tags(self, term: str) -> list[str]:

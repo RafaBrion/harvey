@@ -60,9 +60,10 @@ BOUNCE_SUBJECTS = (
 # After these, the quoted email is usually marked with ">", so any unmarked
 # lines under them are the person's own inline answers.
 _ATTRIBUTION_HEADERS = (
-    # Gmail / Apple Mail, and the Spanish, German and French equivalents
+    # Gmail / Apple Mail, and the Spanish, Portuguese, German and French equivalents
     re.compile(r"^[ \t]*On\b[^\n]{0,300}(?:\n[^\n]{0,300})?\bwrote:[ \t]*$", re.MULTILINE),
     re.compile(r"^[ \t]*El\b[^\n]{0,300}(?:\n[^\n]{0,300})?\bescribi[oó]:[ \t]*$", re.MULTILINE),
+    re.compile(r"^[ \t]*Em\b[^\n]{0,300}(?:\n[^\n]{0,300})?\bescreveu:[ \t]*$", re.MULTILINE),
     re.compile(r"^[ \t]*Am\b[^\n]{0,300}(?:\n[^\n]{0,300})?\bschrieb[^\n]{0,100}:[ \t]*$", re.MULTILINE),
     re.compile(r"^[ \t]*Le\b[^\n]{0,300}(?:\n[^\n]{0,300})?\ba [ée]crit[ \t]*:[ \t]*$", re.MULTILINE),
 )

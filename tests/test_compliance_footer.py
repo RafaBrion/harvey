@@ -800,6 +800,86 @@ def test_spanish_opt_out_lines_are_accepted():
         assert ComplianceConfig(opt_out_line=line).opt_out_line == line
 
 
+# ── Portuguese opt-outs ──
+
+@pytest.mark.parametrize("reply", [
+    "Não, obrigado.", "nao obrigada", "REMOVER", "Remover, por favor", "Descadastrar",
+    "Me tira da lista.", "Me tirem da sua lista, por favor", "Tire-me da lista",
+    "Por favor, me remova da lista de e-mails.", "Remova meu e-mail", "Excluam meu cadastro.",
+    "Quero me descadastrar", "Favor me descadastrar", "Me descadastre",
+    "Não me mande mais e-mails.", "nao me envie mais", "Não me escreva.", "Não nos procurem mais",
+    "Parem de me mandar e-mail.", "Pare de enviar", "Deixem de me escrever",
+    "Não quero receber mais e-mails.", "Não quero mais receber mensagens",
+    "Não tenho interesse.", "Não tenho interesse, obrigado", "Não temos interesse no momento.",
+    "Não estamos interessados, abraço.", "não estou interessada", "Isso não me interessa.",
+    "Sem interesse", "Não, muito obrigado",
+    "Não tenho interesse\n\nAbraço\nJoão Silva\nWhatsApp (11) 99999-0000",
+    "Me remova da lista\nEnviado do meu iPhone",
+    "Não me escrevam mais, já falei antes.", "Não não tenho interesse",
+])
+def test_portuguese_opt_outs(reply):
+    assert _opt_out_reason(reply, reply) is not None
+
+
+@pytest.mark.parametrize("reply", [
+    "Como não, obrigado!", "Sim ou não, obrigado", "Ainda não, obrigado", "Por que não? Obrigado",
+    "Não, obrigado a você pelo contato", "Se não, obrigado mesmo assim",
+    "Não tenho interesse no kit grande, vocês têm um menor?",
+    "Não tenho interesse agora, me escreva em janeiro.",
+    "Não tenho interesse, mas meu sócio talvez tenha.",
+    "Se não me interessar, posso devolver?",
+    "Não me escreva por aqui, melhor pelo WhatsApp.",
+    "Não me mande a proposta por e-mail, me ligue.",
+    "Não me tire da lista, por favor",
+    "Me tira uma dúvida: qual o pedido mínimo?", "Tire o frete do orçamento, eu retiro.",
+    "O fornecedor antigo parou de enviar as caixas.",
+    "Tenho interesse, qual o preço das caixas de brigadeiro?",
+    "Não me mande mais de duas opções.",
+    "Remover o laço da caixa é possível?",
+])
+def test_portuguese_that_is_not_an_opt_out(reply):
+    assert _opt_out_reason(reply, reply) is None
+
+
+@pytest.mark.asyncio
+async def test_a_portuguese_opt_out_reaches_the_handler(state):
+    status, _ = await _reply(state, "Não, obrigado.")
+    assert status == "opted_out"
+
+
+def test_our_own_portuguese_footer_quoted_back_is_not_an_opt_out():
+    line = 'Não quer mais receber? Responda "remover" e eu não escrevo mais.'
+    ours = OurText([line])
+    their = ours.remove(f"Tenho interesse, qual o pedido mínimo?\n> {line}")
+    assert _opt_out_reason(their, "Tenho interesse, qual o pedido mínimo?") is None
+
+
+def test_portuguese_opt_out_lines_are_accepted():
+    for line in ('Não quer mais receber? Responda "remover" e eu não escrevo mais.',
+                 'Sem interesse? Responda "não, obrigado" e não envio mais nada.',
+                 "Para não receber mais e-mails, responda DESCADASTRAR."):
+        assert ComplianceConfig(opt_out_line=line).opt_out_line == line
+
+
+def test_portuguese_gmail_quote_header_is_cut():
+    body = ("Tenho interesse.\n\nEm qua., 5 de nov. de 2026 às 10:00, Rafael <r@x.test> "
+            "escreveu:\n> Oi, tudo bem?")
+    assert strip_quoted_reply(body).strip() == "Tenho interesse."
+
+
+@pytest.mark.parametrize("text, escalates", [
+    ("Vou passar isso para o meu advogado.", True),
+    ("Vou registrar reclamação no Procon e no Reclame Aqui.", True),
+    ("Como conseguiram meu e-mail? Isso fere a LGPD.", True),
+    ("Vou processar vocês.", True),
+    ("Vou denunciar como spam.", True),
+    ("Vocês conseguem processar pedidos de 500 caixas?", False),
+    ("Qual o prazo de entrega para Campinas?", False),
+])
+def test_portuguese_escalation(text, escalates):
+    from harvey.agents.handler import _escalates, _flat
+    assert _escalates(_flat(text)) is escalates
+
 # ── Hebrew escalation ──
 
 @pytest.mark.asyncio
@@ -916,3 +996,13 @@ def test_more_ways_to_say_a_hebrew_legal_threat(reply):
 def test_hyphens_and_near_words_dont_escalate(reply):
     from harvey.agents.handler import _escalates, _flat
     assert not _escalates(_flat(reply))
+
+
+@pytest.mark.parametrize("body, blocked", [
+    ("Oi Ana, espero que esteja bem. Vi as caixas de brigadeiro no Instagram. Como vocês embalam hoje?", True),
+    ("Oi Ana, venho por meio deste apresentar a Pietro. Posso mandar o catálogo?", True),
+    ("Oi Ana, vi as caixas de brigadeiro no Instagram da Doce Ana. Como vocês embalam hoje?", False),
+])
+def test_the_gate_blocks_portuguese_ai_tells(body, blocked):
+    result = pre_send_check("ana@doceana.test", "caixas da doce ana", body, kind="reply")
+    assert any("banned phrases" in r for r in result.reasons) is blocked

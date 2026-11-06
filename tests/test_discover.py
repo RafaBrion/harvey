@@ -1743,3 +1743,16 @@ async def test_osm_maps_spanish_business_terms():
     assert provider._tags("comercio al mayor") == ["shop=wholesale"]
     assert provider._tags("mayorista") == ["shop=wholesale"]
     assert provider._tags("mayor's office") == []
+
+
+@pytest.mark.asyncio
+async def test_osm_maps_portuguese_business_terms():
+    provider = D.OpenStreetMap()
+    assert provider._tags("confeitaria") == ["shop=pastry", "shop=confectionery", "shop=bakery"]
+    assert provider._tags("Doceria") == ["shop=confectionery", "shop=pastry"]
+    assert provider._tags("loja de artigos para festa") == ["shop=party"]
+    assert provider._tags("loja de embalagens") == ["shop=wholesale", "shop=party"]
+    assert provider._tags("chocolateria") == ["shop=chocolate", "shop=confectionery"]
+    assert provider._tags("cestas de café da manhã") == ["shop=gift"]
+    assert provider._tags("buffet infantil") == ["craft=caterer", "amenity=events_venue"]
+    assert provider._tags("escritório") == []

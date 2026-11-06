@@ -83,13 +83,17 @@ NO_THANKS_RE = re.compile(
 BARE_OPT_OUTS = {"stop", "unsubscribe", "remove", "remove me", "opt out",
                  "no thanks", "no thank you", "baja", "no gracias", "de baja", "dar de baja",
                  "darme de baja",
+                 "remover", "descadastrar", "descadastre", "descadastro", "me remova",
+                 "não obrigado", "não obrigada", "nao obrigado", "nao obrigada",
                  "הסר", "הסירו", "הסירי", "תסיר", "תסירו", "להסיר", "הסרה", "להסרה"}
 # Said around a bare opt-out without changing it ("הסר בבקשה", "הסר, תודה").
-_BARE_COURTESIES = {"בבקשה", "נא", "תודה", "רבה", "por", "favor", "gracias", "saludos"}
+_BARE_COURTESIES = {"בבקשה", "נא", "תודה", "רבה", "por", "favor", "gracias", "saludos",
+                    "obrigado", "obrigada", "abraço", "att"}
 _MOBILE_SIGNATURE_RE = re.compile(
     r"^[ \t\u200e\u200f]*(?:sent from my \w[^\n]*|get outlook for \w[^\n]*"
     r"|sent from \w+ mail[^\n]*|נשלח מ[^\n]*|קבל(?:ו)? את outlook[^\n]*"
-    r"|enviado desde mi \w[^\n]*|obt[eé]n outlook para \w[^\n]*)$",
+    r"|enviado desde mi \w[^\n]*|obt[eé]n outlook para \w[^\n]*"
+    r"|enviado do meu \w[^\n]*|obter o outlook para \w[^\n]*)$",
     re.IGNORECASE | re.MULTILINE)
 
 # Hebrew opt-outs. Each needs a verb aimed at the sender and its object
@@ -255,6 +259,74 @@ def _spanish_opt_out(text: str):
     return None
 
 
+# Portuguese (Brazil) opt-outs, read like the Spanish ones: accents removed,
+# one line at a time, the verb aimed at the sender. "Tire o frete do
+# orçamento" is a request, "o fornecedor parou de enviar" is news.
+_PT_US = r"(?:me|nos)"
+_PT_LIST = (r"(?:(?:a|o|as|os|sua|seu|suas|seus|essa|esse|desta|deste|dessa|desse)\s+)*"
+            r"(?:lista|base|cadastro|mailing|envio|contato|newsletter|e-?mail)\w*")
+_PT_REMOVE = (r"(?:tira|tire|tirem|remova|removam|remove|retire|retirem|exclua|excluam"
+              r"|descadastra|descadastre|descadastrem)")
+_PT_MAIL = (r"(?:mais(?!\s+de\s)|e-?mails?|mensagens?|propagandas?|ofertas?|nada|promocoes"
+            r"|promocao)")
+_PT_WRITE = r"(?:mandar|enviar|escrever|contatar|perturbar|incomodar)(?:-?me|-?nos)?"
+# The thought ends here: punctuation, the end of the line, or a comma that
+# doesn't go on to "but", "unless" or "if".
+_PT_SAY_END = (r"(?=[ \t]*(?:[.!;]|$|,(?![ \t]*(?:mas|porem|exceto|a[ \t]+menos|se|so[ \t]+que)"
+               r"(?!\w))))")
+PORTUGUESE_OPT_OUT_PATTERNS = (
+    # Take me off (the list).
+    _PT_US + r"\s+" + _PT_REMOVE + r"(?:\s+d[aeo]s?\s+" + _PT_LIST + "|" + _PT_SAY_END + ")",
+    _PT_REMOVE + r"-" + _PT_US + r"(?:\s+d[aeo]s?\s+" + _PT_LIST + "|" + _PT_SAY_END + ")",
+    r"(?:" + _PT_REMOVE + r"|apague|apaguem|remover|excluir|tirar|retirar|apagar)\s+(?:o\s+)?"
+    r"(?:meu|nosso)\s+(?:e-?mail|contato|cadastro|endereco)\w*",
+    _PT_US + r"\s+descadastr\w*|descadastr\w*-" + _PT_US,
+    r"(?:quero|queremos|gostaria\s+de|gostariamos\s+de|desejo|desejamos|favor)\s+(?:me\s+|nos\s+)?"
+    r"(?:descadastrar|sair\s+d[aeo]\s+" + _PT_LIST + r"|ser\s+removid[oa]s?)",
+    r"cancelar\s+(?:a\s+|minha\s+)?inscricao",
+    # Don't write to / contact me.
+    r"nao\s+" + _PT_US + r"\s+(?:escrev(?:a|am)|contat(?:e|em)|procur(?:e|em)|perturb(?:e|em)"
+    r"|incomod(?:e|em))(?!\w)",
+    r"nao\s+" + _PT_US + r"\s+(?:mand(?:e|em)|envi(?:e|em))(?!\w)(?:\s+" + _PT_MAIL
+    + r"(?!\w)|" + _PT_SAY_END + ")",
+    r"(?:parem|pare|para|deixem|deixe|deixa)\s+de\s+(?:" + _PT_US + r"\s+)?" + _PT_WRITE,
+    r"nao\s+(?:quero|queremos|desejo|desejamos)\s+(?:mais\s+)?(?:continuar\s+(?:a\s+)?)?receber\s+"
+    r"(?:(?:mais|seus|suas|esses|essas|estes|estas|nenhum|nenhuma)\s+)*" + _PT_MAIL,
+    # Not interested, as the whole thought: not "não tenho interesse no plano anual".
+    r"(?:nao\s+(?:tenho|temos)\s+(?:nenhum\s+)?interesse|nao\s+(?:estou|estamos)\s+interessad[oa]s?"
+    r"|nao\s+" + _PT_US + r"\s+interessa|sem\s+interesse)"
+    r"(?:\s+(?:no\s+momento|por\s+enquanto|por\s+ora|agora))?" + _PT_SAY_END,
+)
+PORTUGUESE_OPT_OUT_RE = re.compile(
+    r"(?<!\w)(?:" + "|".join(PORTUGUESE_OPT_OUT_PATTERNS) + r")(?!\w)", re.MULTILINE)
+_PT_NOT_FINAL_BEFORE = {"nao", "se", "porque", "quando", "ainda", "como"}
+_PT_NOT_FINAL_AFTER_RE = re.compile(
+    r"(?<!\w)(?:ate|antes\s+d[eao]|depois\s+d[eao]|a\s+partir\s+d[eao]|melhor|prefiro|whatsapp"
+    r"|zap|por\s+telefone|me\s+lig\w*|lig(?:ue|uem)|segunda|terca|quarta|quinta|sexta|sabado"
+    r"|domingo|semana|mes|janeiro|fevereiro|marco|abril|maio|junho|julho|agosto|setembro"
+    r"|outubro|novembro|dezembro)(?!\w)")
+# "Não, obrigado": as with "no thanks". Not "ainda não, obrigado" (not yet),
+# "sim ou não, obrigado", "se não, obrigado" or "não, obrigado a você".
+PORTUGUESE_NO_THANKS_RE = re.compile(
+    r"(?<!\bou )(?<!como )(?<!se )(?<!que )(?<!porque )(?<!ainda )(?<!por que )"
+    r"\bnao,?[ \t]+(?:muito[ \t]+)?obrigad[oa]s?\b(?![ \t]+(?:a|ao|pel[oa]|por)\b)")
+
+
+def _portuguese_opt_out(text: str):
+    """The first Portuguese opt-out phrase in _spanish_lines text that means it."""
+    for m in PORTUGUESE_OPT_OUT_RE.finditer(text):
+        line_start = text.rfind("\n", 0, m.start()) + 1
+        last = _ES_LAST_WORD_RE.search(text[max(line_start, m.start() - 40):m.start()])
+        before = last.group(1) if last else ""
+        if before in _PT_NOT_FINAL_BEFORE and not (before == "nao" and m.group(0).startswith("nao")):
+            continue
+        sentence_end = re.search(r"[.!?;\n]", text[m.end():])
+        after = text[m.end():m.end() + sentence_end.start()] if sentence_end else text[m.end():]
+        if _PT_NOT_FINAL_AFTER_RE.search(after):
+            continue
+        return m
+    return None
+
 # Direction marks a mail client puts around Hebrew, and Hebrew vowel points:
 # they change no word, so they mustn't hide one.
 _INVISIBLE_RE = re.compile(
@@ -340,9 +412,17 @@ def _opt_out_reason(their_text: str, own_words: str) -> dict | None:
     if m:
         return {"rule": "phrase", "matched": m.group(0),
                 "why": f'Their reply contains "{m.group(0)}".'}
+    m = _portuguese_opt_out(_spanish_lines(their_text))
+    if m:
+        return {"rule": "phrase", "matched": m.group(0),
+                "why": f'Their reply contains "{m.group(0)}".'}
     for line in their_text.split("\n"):
         line = _flat(line)
         m = SPANISH_NO_THANKS_RE.search(_no_accents(line))
+        if m:
+            return {"rule": "no_thanks", "matched": m.group(0),
+                    "why": f'Their reply says "{m.group(0)}" (no thanks).'}
+        m = PORTUGUESE_NO_THANKS_RE.search(_no_accents(line))
         if m:
             return {"rule": "no_thanks", "matched": m.group(0),
                     "why": f'Their reply says "{m.group(0)}" (no thanks).'}
@@ -449,12 +529,23 @@ HEBREW_ESCALATION_RE = re.compile(
     r"(?<!\w)[ובכלמשה]{0,2}(?:" + "|".join(HEBREW_ESCALATION_PATTERNS) + r")(?!\w)")
 
 
+# Portuguese ones, accents removed. "Processar pedidos" is work, so suing
+# needs its object; the legal department, Procon, Reclame Aqui and the LGPD
+# always go to a human.
+PORTUGUESE_ESCALATION_RE = re.compile(
+    r"(?<!\w)(?:advogad[oa]s?|juridic[oa]|departamento\s+juridico|procon|reclame\s*aqui|anpd|lgpd"
+    r"|process(?:ar|o|arei|aremos)\s+(?:voces|vcs|a\s+empresa|sua\s+empresa|essa\s+empresa)"
+    r"|processo\s+judicial|acao\s+judicial|entrar\s+na\s+justica|notificacao\s+extrajudicial"
+    r"|denunci(?:a|ar|arei|aremos|ei)|assedio)(?!\w)")
+
+
 def _escalates(flat: str) -> bool:
     """Whether their words (flattened, our text removed) need a human."""
     # "עורך-דין" and "בית־המשפט" are the same words as with a space.
     spaced = re.sub(r"(?<=[\u05d0-\u05ea])[-\u05be](?=[\u05d0-\u05ea])", " ", flat)
     return (any(p in flat for p in ESCALATION_PATTERNS)
-            or HEBREW_ESCALATION_RE.search(spaced) is not None)
+            or HEBREW_ESCALATION_RE.search(spaced) is not None
+            or PORTUGUESE_ESCALATION_RE.search(_no_accents(flat)) is not None)
 
 
 # The conversation a reply is written from. Cold-email threads are short, so
